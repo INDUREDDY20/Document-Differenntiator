@@ -14,7 +14,7 @@ from sentence_transformers import SentenceTransformer, util
 import imagehash
 from skimage.metrics import structural_similarity as ssim
 
-# ============ SETUP ============
+# ============ SAFE SETUP (NO EMOJIS IN TITLE!) ============
 nltk.download('punkt', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 
@@ -23,93 +23,74 @@ def get_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 model = get_model()
 
-# ============ ULTIMATE 2025 DESIGN (REAL ICONS + ANIMATIONS) ============
-st.set_page_config(page_title="DifferencePro AI • Compare Anything", layout="wide", initial_sidebar_state="expanded")
+# ============ PAGE CONFIG (FIXED!) ============
+st.set_page_config(
+    page_title="DifferencePro AI - Document Comparator",
+    page_icon="magnifying-glass-tilted",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# ============ GORGEOUS DESIGN WITH ICONS ============
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap');
-    
-    html, body, .stApp {font-family: 'Space Grotesk', sans-serif; background: #0a0a1f;}
-    
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+    html, body, .stApp {font-family: 'Space Grotesk', sans-serif;}
     .main {background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;}
     
     .header {text-align: center; padding: 3rem 0 2rem;}
-    .title {font-size: 5rem; font-weight: 800; background: linear-gradient(90deg, #a8edea, #fed6e3); 
+    .title {font-size: 5rem; font-weight: 800; background: linear-gradient(90deg, #a8edea, #fed6e3);
              -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;}
     .subtitle {color: #e0dfff; font-size: 1.5rem; font-weight: 300; margin-top: 1rem;}
     
     .card {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 28px;
-        padding: 2.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255,255,255,0.1);
+        border-radius: 28px; padding: 2.5rem; margin: 1.5rem 0;
+        border: 1px solid rgba(255,255,255,0.18);
         backdrop-filter: blur(20px);
         box-shadow: 0 20px 50px rgba(0,0,0,0.4);
         transition: all 0.4s ease;
-        margin: 1.5rem 0;
     }
-    .card:hover {transform: translateY(-12px); box-shadow: 0 30px 70px rgba(102, 126, 234, 0.5);}
+    .card:hover {transform: translateY(-12px); box-shadow: 0 30px 70px rgba(102,126,234,0.5);}
     
     .upload-box {
         border: 3px dashed rgba(255,255,255,0.4);
-        border-radius: 20px;
-        padding: 3rem;
-        text-align: center;
+        border-radius: 20px; padding: 3rem; text-align: center;
         transition: all 0.3s;
     }
-    .upload-box:hover {border-color: #a8edea; background: rgba(168, 237, 234, 0.1);}
+    .upload-box:hover {border-color: #a8edea; background: rgba(168,237,234,0.1);}
     
     .result-metric {
-        background: rgba(255,255,255,0.15);
-        padding: 2rem;
-        border-radius: 20px;
-        text-align: center;
-        font-size: 3.8rem;
-        font-weight: 800;
-        color: #fff;
+        background: rgba(255,255,255,0.15); padding: 2rem; border-radius: 20px;
+        text-align: center; font-size: 3.8rem; font-weight: 800; color: #fff;
     }
     
     .stButton > button {
         background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #a8edea);
-        background-size: 300%;
-        color: white;
-        border: none;
-        border-radius: 50px;
-        padding: 18px 50px;
-        font-size: 1.3rem;
-        font-weight: 700;
+        background-size: 300%; color: white; border: none; border-radius: 50px;
+        padding: 18px 50px; font-size: 1.3rem; font-weight: 700;
         animation: gradient 8s ease infinite;
         box-shadow: 0 15px 35px rgba(255,107,107,0.4);
     }
     @keyframes gradient {0%,100%{background-position:0% 50%} 50%{background-position:100% 50%}}
     
     .sidebar .sidebar-content {background: rgba(10,10,31,0.95); backdrop-filter: blur(15px);}
-    .css-1d391kg {padding-top: 2rem;}
 </style>
 """, unsafe_allow_html=True)
 
-# ============ SIDEBAR WITH ANIMATED ICONS ============
+# ============ SIDEBAR WITH BRAIN ICON ============
 st.sidebar.markdown("""
 <div style='text-align:center; padding:2rem 0;'>
 <h1 style='color:#a8edea; margin:0;'><i class="fa-solid fa-brain fa-bounce" style="font-size:3rem;"></i></h1>
 <h2 style='color:#fff; margin:10px 0;'>DiffPro AI</h2>
-<p style='color:#a29bfe; font-size:0.9rem;'>World's Smartest Document Comparator</p>
+<p style='color:#a29bfe; font-size:0.9rem;'>Smartest Document Comparator</p>
 </div>
 """, unsafe_allow_html=True)
 
-page = st.sidebar.radio(
-    "Navigation",
-    ["Compare Documents", "Features", "About Me"],
-    format_func=lambda x: {
-        "Compare Documents": "Compare Documents",
-        "Features": "Key Features",
-        "About Me": "Developer"
-    }[x]
-)
+page = st.sidebar.radio("Navigate", ["Compare Documents", "Features", "About Me"])
 
-# ============ HOME: COMPARISON PAGE ============
+# ============ MAIN COMPARISON PAGE ============
 if page == "Compare Documents":
     st.markdown("<div class='header'>", unsafe_allow_html=True)
     st.markdown("<h1 class='title'>DiffPro AI</h1>", unsafe_allow_html=True)
@@ -117,21 +98,17 @@ if page == "Compare Documents":
     st.markdown("</div>", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2, gap="large")
-    
     with col1:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3><i class='fa-solid fa-file-circle-plus' style='color:#a8edea;'></i> Document A</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>First Document</h3>", unsafe_allow_html=True)
         file_a = st.file_uploader("", type=['pdf','docx','txt','xlsx','png','jpg','jpeg'], key="a", label_visibility="collapsed")
-        if file_a:
-            st.markdown(f"<p style='color:#a8edea;'><i class='fa-solid fa-check-circle'></i> {file_a.name}</p>", unsafe_allow_html=True)
+        if file_a: st.success(f"{file_a.name}")
         st.markdown("</div>", unsafe_allow_html=True)
-    
     with col2:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<h3><i class='fa-solid fa-file-circle-plus' style='color:#fed6e3;'></i> Document B</h3>", unsafe_allow_html=True)
+        st.markdown("<h3>Second Document</h3>", unsafe_allow_html=True)
         file_b = st.file_uploader("", type=['pdf','docx','txt','xlsx','png','jpg','jpeg'], key="b", label_visibility="collapsed")
-        if file_b:
-            st.markdown(f"<p style='color:#fed6e3;'><i class='fa-solid fa-check-circle'></i> {file_b.name}</p>", unsafe_allow_html=True)
+        if file_b: st.success(f"{file_b.name}")
         st.markdown("</div>", unsafe_allow_html=True)
 
     if file_a and file_b:
@@ -154,7 +131,7 @@ if page == "Compare Documents":
                     ssim_score = ssim(g1, g2, data_range=255)
 
                     st.markdown("<div class='card'>", unsafe_allow_html=True)
-                    st.markdown("<h2 style='text-align:center; color:#fff;'><i class='fa-solid fa-images'></i> Image Analysis</h2>", unsafe_allow_html=True)
+                    st.markdown("<h2 style='text-align:center; color:#fff;'>Image Comparison Results</h2>", unsafe_allow_html=True)
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.markdown(f"<div class='result-metric'>{phash_sim:.1%}</div><p style='text-align:center; color:#a8edea;'>Visual Match</p>", unsafe_allow_html=True)
@@ -167,7 +144,7 @@ if page == "Compare Documents":
                     st.image([img_a, img_b], width=400)
                     st.markdown("</div>", unsafe_allow_html=True)
 
-                # TEXT COMPARISON
+                # TEXT & DOCUMENT COMPARISON
                 else:
                     def extract_text(data, filename):
                         name = filename.lower()
@@ -206,17 +183,17 @@ if page == "Compare Documents":
                         sem_sim = util.cos_sim(emb_a, emb_b).diag().mean().item()
 
                     st.markdown("<div class='card'>", unsafe_allow_html=True)
-                    st.markdown("<h2 style='text-align:center; color:#fff;'><i class='fa-solid fa-robot'></i> AI Analysis Complete</h2>", unsafe_allow_html=True)
+                    st.markdown("<h2 style='text-align:center; color:#fff;'>AI Analysis Complete</h2>", unsafe_allow_html=True)
                     
                     col1, col2 = st.columns(2)
                     with col1:
                         st.markdown(f"<div class='result-metric' style='color:#a8edea;'>{line_sim:.1%}</div>", unsafe_allow_html=True)
-                        st.markdown("<p style='text-align:center; color:#a8edea; font-size:1.3rem;'><i class='fa-solid fa-align-left'></i> Line-by-Line Match</p>", unsafe_allow_html=True)
+                        st.markdown("<p style='text-align:center; color:#a8edea; font-size:1.3rem;'>Line-by-Line Match</p>", unsafe_allow_html=True)
                     with col2:
                         st.markdown(f"<div class='result-metric' style='color:#fed6e3;'>{sem_sim:.1%}</div>", unsafe_allow_html=True)
-                        st.markdown("<p style='text-align:center; color:#fed6e3; font-size:1.3rem;'><i class='fa-solid fa-lightbulb'></i> Semantic Meaning Match</p>", unsafe_allow_html=True)
+                        st.markdown("<p style='text-align:center; color:#fed6e3; font-size:1.3rem;'>Semantic Meaning Match</p>", unsafe_allow_html=True)
 
-                    st.markdown("<h3 style='color:#fff; text-align:center; margin-top:2rem;'><i class='fa-solid fa-table'></i> Side-by-Side View</h3>", unsafe_allow_html=True)
+                    st.markdown("<h3 style='color:#fff; text-align:center; margin-top:2rem;'>Side-by-Side View</h3>", unsafe_allow_html=True)
                     left, right = [], []
                     for tag, i1, i2, j1, j2 in ops[:120]:
                         a_part = lines_a[i1:i2]
@@ -239,7 +216,7 @@ if page == "Compare Documents":
                     
                     st.download_button(
                         "Download Full AI Report",
-                        json.dumps({"line_similarity": line_sim, "semantic_similarity": sem_sim, "total_changes": changes}, indent=2),
+                        json.dumps({"line_similarity": line_sim, "semantic_similarity": sem_sim, "changes_detected": changes}, indent=2),
                         "DiffPro_AI_Report.json",
                         "application/json"
                     )
@@ -247,42 +224,41 @@ if page == "Compare Documents":
 
 # ============ FEATURES PAGE ============
 elif page == "Features":
-    st.markdown("<h1 class='title'>Why DiffPro AI?</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 class='title'>Why Choose DiffPro AI?</h1>", unsafe_allow_html=True)
     features = [
-        ("OCR for Scanned PDFs", "fa-solid fa-eye"),
-        ("AI Semantic Understanding", "fa-solid fa-brain"),
-        ("Excel & Table Comparison", "fa-solid fa-table"),
-        ("Image Visual Diff", "fa-solid fa-images"),
-        ("Beautiful Modern UI", "fa-solid fa-gem"),
-        ("Download Reports", "fa-solid fa-download"),
-        ("100% Free & Open Source", "fa-solid fa-heart")
+        ("AI Semantic Comparison", "fa-solid fa-brain", "#a8edea"),
+        ("OCR for Scanned PDFs", "fa-solid fa-eye", "#fed6e3"),
+        ("Excel & Table Support", "fa-solid fa-table", "#48dbfb"),
+        ("Image Visual Diff", "fa-solid fa-images", "#ff6b6b"),
+        ("Beautiful Modern UI", "fa-solid fa-gem", "#feca57"),
+        ("Download Reports", "fa-solid fa-download", "#a29bfe"),
+        ("100% Free Forever", "fa-solid fa-heart", "#ff6b6b")
     ]
     cols = st.columns(4)
-    for i, (text, icon) in enumerate(features):
+    for i, (text, icon, color) in enumerate(features):
         with cols[i % 4]:
-            st.markdown(f"<div class='card' style='text-align:center; height:180px;'>", unsafe_allow_html=True)
-            st.markdown(f"<h2><i class='{icon}' style='color:#a8edea; font-size:3rem;'></i></h2>", unsafe_allow_html=True)
+            st.markdown(f"<div class='card' style='text-align:center; height:200px;'>", unsafe_allow_html=True)
+            st.markdown(f"<h2><i class='{icon}' style='color:{color}; font-size:3.5rem;'></i></h2>", unsafe_allow_html=True)
             st.markdown(f"<h4 style='color:#fff;'>{text}</h4>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
 # ============ DEVELOPER PAGE ============
-elif page == "Developer":
+elif page == "About Me":
     st.markdown("<h1 class='title'>Indu Reddy</h1>", unsafe_allow_html=True)
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     col1, col2 = st.columns([1,2])
     with col1:
-        st.image("https://avatars.githubusercontent.com/u/yourid", width=280, caption="Data Scientist")
+        st.image("https://avatars.githubusercontent.com/u/123456789?v=4", width=280, caption="AI Developer")
     with col2:
         st.markdown("""
-        <h2 style='color:#a8edea;'>AI Engineer</h2>
+        <h2 style='color:#a8edea;'>AI Engineer • Bengaluru</h2>
         <p style='color:#e0dfff; font-size:1.2rem; line-height:1.8;'>
-        Building intelligent, beautiful tools that solve real problems.<br><br>
+        Passionate about building intelligent, beautiful tools that solve real problems.<br><br>
         This app uses AI, OCR, NLP, and Computer Vision to compare any document format.<br><br>
         <strong>GitHub:</strong> <a href='https://github.com/indureddy20' style='color:#667eea;'>github.com/indureddy20</a><br>
-        <strong>Deployed on:</strong> Streamlit Cloud (Free Tier)<br><br>
-        This project is 100% open-source and production-ready.
+        <strong>Deployed on:</strong> Streamlit Cloud • 100% Free & Open Source
         </p>
         """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-st.sidebar.markdown("<p style='text-align:center; color:#667eea; margin-top:4rem; font-size:0.9rem;'>© 2025 DifferencePro AI • Made with passion in Bengaluru</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align:center; color:#667eea; margin-top:4rem; font-size:0.9rem;'>© 2025 DifferencePro AI • Made in Bengaluru</p>", unsafe_allow_html=True)
