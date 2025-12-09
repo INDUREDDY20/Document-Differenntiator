@@ -1,6 +1,6 @@
 import streamlit as st
 
-# ============ THIS MUST BE THE VERY FIRST STREAMLIT COMMAND ============
+# MUST BE THE VERY FIRST STREAMLIT COMMAND — THIS FIXES THE ERROR
 st.set_page_config(
     page_title="DiffPro AI - Document Comparator",
     page_icon="magnifying-glass-tilted",
@@ -8,7 +8,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============ NOW IMPORT EVERYTHING ELSE ============
+import streamlit as st
 import io
 import json
 import nltk
@@ -24,7 +24,7 @@ from sentence_transformers import SentenceTransformer, util
 import imagehash
 from skimage.metrics import structural_similarity as ssim
 
-# ============ SETUP ============
+# ============ SAFE SETUP (NO EMOJIS IN TITLE!) ============
 nltk.download('punkt', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 
@@ -33,7 +33,7 @@ def get_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 model = get_model()
 
-# ============ GORGEOUS DESIGN ============
+# ============ GORGEOUS DESIGN WITH ICONS ============
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 <style>
@@ -56,6 +56,13 @@ st.markdown("""
     }
     .card:hover {transform: translateY(-12px); box-shadow: 0 30px 70px rgba(102,126,234,0.5);}
     
+    .upload-box {
+        border: 3px dashed rgba(255,255,255,0.4);
+        border-radius: 20px; padding: 3rem; text-align: center;
+        transition: all 0.3s;
+    }
+    .upload-box:hover {border-color: #a8edea; background: rgba(168,237,234,0.1);}
+    
     .result-metric {
         background: rgba(255,255,255,0.15); padding: 2rem; border-radius: 20px;
         text-align: center; font-size: 3.8rem; font-weight: 800; color: #fff;
@@ -74,10 +81,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ============ SIDEBAR ============
+# ============ SIDEBAR WITH BRAIN ICON ============
 st.sidebar.markdown("""
 <div style='text-align:center; padding:2rem 0;'>
-<h1 style='color:#a8edea; margin:0;'></h1>
+<h1 style='color:#a8edea; margin:0;'><i class="fa-solid fa-brain fa-bounce" style="font-size:3rem;"></i></h1>
 <h2 style='color:#fff; margin:10px 0;'>DiffPro AI</h2>
 <p style='color:#a29bfe; font-size:0.9rem;'>Smartest Document Comparator</p>
 </div>
@@ -85,11 +92,11 @@ st.sidebar.markdown("""
 
 page = st.sidebar.radio("Navigate", ["Compare Documents", "Features", "About Me"])
 
-# ============ MAIN PAGE ============
+# ============ MAIN COMPARISON PAGE ============
 if page == "Compare Documents":
     st.markdown("<div class='header'>", unsafe_allow_html=True)
     st.markdown("<h1 class='title'>DiffPro AI</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>Upload any two files • Get AI insights instantly</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>Upload any two files • Get AI-powered insights instantly</p>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
     col1, col2 = st.columns(2, gap="large")
@@ -108,14 +115,14 @@ if page == "Compare Documents":
 
     if file_a and file_b:
         if st.button("Run AI Comparison", use_container_width=True):
-            with st.spinner("Analyzing..."):
+            with st.spinner("AI is analyzing your documents..."):
                 bytes_a = file_a.read()
                 bytes_b = file_b.read()
                 name_a = file_a.name
                 name_b = file_b.name
 
+                # IMAGE COMPARISON
                 if name_a.lower().endswith(('png','jpg','jpeg')) and name_b.lower().endswith(('png','jpg','jpeg')):
-                    # Image comparison logic
                     img_a = Image.open(io.BytesIO(bytes_a))
                     img_b = Image.open(io.BytesIO(bytes_b))
                     h1 = imagehash.phash(img_a)
@@ -126,16 +133,21 @@ if page == "Compare Documents":
                     ssim_score = ssim(g1, g2, data_range=255)
 
                     st.markdown("<div class='card'>", unsafe_allow_html=True)
-                    col1, col2 = st.columns(2)
+                    st.markdown("<h2 style='text-align:center; color:#fff;'>Image Comparison Results</h2>", unsafe_allow_html=True)
+                    col1, col2, col3 = st.columns(3)
                     with col1:
                         st.markdown(f"<div class='result-metric'>{phash_sim:.1%}</div><p style='text-align:center; color:#a8edea;'>Visual Match</p>", unsafe_allow_html=True)
                     with col2:
                         st.markdown(f"<div class='result-metric'>{ssim_score:.3f}</div><p style='text-align:center; color:#fed6e3;'>Quality Score</p>", unsafe_allow_html=True)
+                    with col3:
+                        status = "Identical" if phash_sim > 0.95 else "Different"
+                        color = "#a8edea" if phash_sim > 0.95 else "#ff6b6b"
+                        st.markdown(f"<div class='result-metric' style='color:{color};'>{status}</div><p style='text-align:center; color:#fff;'>Result</p>", unsafe_allow_html=True)
                     st.image([img_a, img_b], width=400)
                     st.markdown("</div>", unsafe_allow_html=True)
 
+                # TEXT & DOCUMENT COMPARISON
                 else:
-                    # Full text comparison logic
                     def extract_text(data, filename):
                         name = filename.lower()
                         if name.endswith('.txt'): return data.decode('utf-8')
@@ -173,17 +185,19 @@ if page == "Compare Documents":
                         sem_sim = util.cos_sim(emb_a, emb_b).diag().mean().item()
 
                     st.markdown("<div class='card'>", unsafe_allow_html=True)
+                    st.markdown("<h2 style='text-align:center; color:#fff;'>AI Analysis Complete</h2>", unsafe_allow_html=True)
+                    
                     col1, col2 = st.columns(2)
                     with col1:
                         st.markdown(f"<div class='result-metric' style='color:#a8edea;'>{line_sim:.1%}</div>", unsafe_allow_html=True)
-                        st.markdown("<p style='text-align:center; color:#a8edea; font-size:1.3rem;'>Line-by-Line</p>", unsafe_allow_html=True)
+                        st.markdown("<p style='text-align:center; color:#a8edea; font-size:1.3rem;'>Line-by-Line Match</p>", unsafe_allow_html=True)
                     with col2:
                         st.markdown(f"<div class='result-metric' style='color:#fed6e3;'>{sem_sim:.1%}</div>", unsafe_allow_html=True)
-                        st.markdown("<p style='text-align:center; color:#fed6e3; font-size:1.3rem;'>Semantic Match</p>", unsafe_allow_html=True)
+                        st.markdown("<p style='text-align:center; color:#fed6e3; font-size:1.3rem;'>Semantic Meaning Match</p>", unsafe_allow_html=True)
 
-                    st.markdown("<h3 style='color:#fff; text-align:center;'>Side-by-Side</h3>", unsafe_allow_html=True)
+                    st.markdown("<h3 style='color:#fff; text-align:center; margin-top:2rem;'>Side-by-Side View</h3>", unsafe_allow_html=True)
                     left, right = [], []
-                    for tag, i1, i2, j1, j2 in ops[:100]:
+                    for tag, i1, i2, j1, j2 in ops[:120]:
                         a_part = lines_a[i1:i2]
                         b_part = lines_b[j1:j2]
                         max_len = max(len(a_part), len(b_part))
@@ -202,16 +216,51 @@ if page == "Compare Documents":
                     df = pd.DataFrame({"Document A": left, "Document B": right})
                     st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
                     
-                    st.download_button("Download Report", json.dumps({"line": line_sim, "semantic": sem_sim}, indent=2), "report.json")
+                    st.download_button(
+                        "Download Full AI Report",
+                        json.dumps({"line_similarity": line_sim, "semantic_similarity": sem_sim, "changes_detected": changes}, indent=2),
+                        "DiffPro_AI_Report.json",
+                        "application/json"
+                    )
                     st.markdown("</div>", unsafe_allow_html=True)
 
-# ============ OTHER PAGES ============
+# ============ FEATURES PAGE ============
 elif page == "Features":
-    st.markdown("<h1 class='title'>Features</h1>", unsafe_allow_html=True)
-    st.markdown("All features working perfectly!")
+    st.markdown("<h1 class='title'>Why Choose DiffPro AI?</h1>", unsafe_allow_html=True)
+    features = [
+        ("AI Semantic Comparison", "fa-solid fa-brain", "#a8edea"),
+        ("OCR for Scanned PDFs", "fa-solid fa-eye", "#fed6e3"),
+        ("Excel & Table Support", "fa-solid fa-table", "#48dbfb"),
+        ("Image Visual Diff", "fa-solid fa-images", "#ff6b6b"),
+        ("Beautiful Modern UI", "fa-solid fa-gem", "#feca57"),
+        ("Download Reports", "fa-solid fa-download", "#a29bfe"),
+        ("100% Free Forever", "fa-solid fa-heart", "#ff6b6b")
+    ]
+    cols = st.columns(4)
+    for i, (text, icon, color) in enumerate(features):
+        with cols[i % 4]:
+            st.markdown(f"<div class='card' style='text-align:center; height:200px;'>", unsafe_allow_html=True)
+            st.markdown(f"<h2><i class='{icon}' style='color:{color}; font-size:3.5rem;'></i></h2>", unsafe_allow_html=True)
+            st.markdown(f"<h4 style='color:#fff;'>{text}</h4>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
+# ============ DEVELOPER PAGE ============
 elif page == "About Me":
     st.markdown("<h1 class='title'>Indu Reddy</h1>", unsafe_allow_html=True)
-    st.markdown("Your amazing developer profile here!")
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    col1, col2 = st.columns([1,2])
+    with col1:
+        st.image("https://avatars.githubusercontent.com/u/123456789?v=4", width=280, caption="Full-Stack AI Developer")
+    with col2:
+        st.markdown("""
+        <h2 style='color:#a8edea;'>Full-Stack AI Engineer • Bengaluru</h2>
+        <p style='color:#e0dfff; font-size:1.2rem; line-height:1.8;'>
+        Passionate about building intelligent, beautiful tools that solve real problems.<br><br>
+        This app uses AI, OCR, NLP, and Computer Vision to compare any document format.<br><br>
+        <strong>GitHub:</strong> <a href='https://github.com/indureddy20' style='color:#667eea;'>github.com/indureddy20</a><br>
+        <strong>Deployed on:</strong> Streamlit Cloud • 100% Free & Open Source
+        </p>
+        """, unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.sidebar.markdown("<p style='text-align:center; color:#667eea; margin-top:4rem;'>© 2025 DiffPro AI</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<p style='text-align:center; color:#667eea; margin-top:4rem; font-size:0.9rem;'>© 2025 DiffPro AI • Made in Bengaluru</p>", unsafe_allow_html=True)
