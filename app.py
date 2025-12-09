@@ -514,8 +514,46 @@ elif page == "About Me":
     about_html = """
 <div class='card'>
     <div class='about-container'>
+    
+        <img src='https://cdn-icons-png.flaticon.com/512/2922/2922561.png' class='about-img'>
 
-        <!-- Corporate female avatar -->
+        <div class='about-text'>
+            <h2 style='color:#00D2FF; margin-bottom:8px;'>Indu Reddy</h2>
+
+            <p>
+            AI Engineer • Bengaluru <br><br>
+
+            I design advanced AI-powered tools that solve real-world problems using
+            Machine Learning, NLP, OCR, and Computer Vision.<br><br>
+
+            DiffPro AI compares PDFs, Word files, Excel sheets, and images using
+            semantic analysis, visual similarity, and structural comparison.<br><br>
+
+            <strong>Expertise:</strong><br>
+            • Artificial Intelligence & Machine Learning<br>
+            • NLP / Document Intelligence<br>
+            • Data Engineering & Automation<br>
+            • Model Deployment & AI UI/UX<br><br>
+
+            <strong>GitHub:</strong><br>
+            <a href="https://github.com/indureddy20">github.com/indureddy20</a>
+            </p>
+
+        </div>
+
+    </div>
+</div>
+"""
+
+    st.markdown(about_html, unsafe_allow_html=True)
+elif page == "About Me":
+
+    st.title("👩‍💼 About the Creator")
+
+    about_html = """
+<div class='card'>
+    <div class='about-container'>
+    
         <img src='https://cdn-icons-png.flaticon.com/512/2922/2922561.png' class='about-img'>
 
         <div class='about-text'>
@@ -548,6 +586,3 @@ elif page == "About Me":
 
     st.markdown(about_html, unsafe_allow_html=True)
 
-
-
-st.markdown("<br><center>DiffPro AI • Built with love and passion</center>", unsafe_allow_html=True)
