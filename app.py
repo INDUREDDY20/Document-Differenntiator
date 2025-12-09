@@ -329,23 +329,14 @@ elif page == "Features":
     </p>
 </div>
 
+st.markdown("""
 <div class='card'>
-    <h3>📤 JSON Comparison Report</h3>
+    <h3>🌐 Multi-format Document Support</h3>
     <p>
-        Exports differences in text, semantics, numbers, tables, and images —
-        ideal for automation pipelines and audit logs.
-    </p>
-</div>
-
-<div class='card'>
-    <h3>🌐 Multi-format Support</h3>
-    <p>
-        Supports PDF, DOCX, TXT, XLSX, PNG, JPG — plug and play.
+        Works with PDF, DOCX, TXT, XLSX, PNG, JPG — plug and play.
     </p>
 </div>
 """, unsafe_allow_html=True)
-
-
 
 # ============================================================
 # PAGE: ABOUT ME
@@ -385,4 +376,3 @@ elif page == "About Me":
     </div>
 </div>
 """, unsafe_allow_html=True)
-
