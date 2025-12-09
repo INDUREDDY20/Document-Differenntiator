@@ -336,85 +336,89 @@ if page == "Compare Documents":
         col1.text_area("Document A", A["text"][:5000], height=300)
         col2.text_area("Document B", B["text"][:5000], height=300)
 
-
 # ============================
-# PAGE: FEATURES — RESTORED UI
+# PAGE: FEATURES (replacement)
 # ============================
 elif page == "Features":
+    st.title("✨ Features of DiffPro AI")
 
-    st.title("✨ Why Choose DiffPro AI?")
-
-    # 7 feature cards (restored)
+    # feature definitions (title, short desc, accent color)
     features = [
-        ("AI Semantic Comparison", "fa-solid fa-brain fa-beat", "#00d2ff"),
-        ("OCR for Scanned PDFs", "fa-solid fa-eye fa-flip", "#7c4dff"),
-        ("Excel & Table Support", "fa-solid fa-table fa-bounce", "#00bfa5"),
-        ("Image Visual Diff", "fa-solid fa-images fa-shake", "#ff6b6b"),
-        ("Modern UI Experience", "fa-solid fa-gem fa-spin", "#ffd93d"),
-        ("Downloadable Reports", "fa-solid fa-download fa-bounce", "#4caf50"),
-        ("100% Free Forever", "fa-solid fa-heart fa-beat-fade", "#ff4081"),
+        ("AI Semantic Comparison", "Detects paraphrase & semantic drift using transformer embeddings.", "#00d2ff"),
+        ("OCR for Scanned PDFs", "Extract text from scanned PDFs/images reliably with Tesseract OCR.", "#7c4dff"),
+        ("Excel & Table Support", "Sheet & cell level summaries, quick table previews.", "#00bfa5"),
+        ("Image Visual Diff", "Perceptual hashing & SSIM for image similarity and drift.", "#ff6b6b"),
+        ("Modern UI Experience", "Polished glass cards, responsive layout, and animations.", "#ffd93d"),
+        ("Downloadable Reports", "Export structured JSON reports for auditing & automation.", "#4caf50"),
+        ("100% Free Forever", "Free to use, self-host or deploy to Streamlit Cloud.", "#ff4081"),
     ]
 
-    cols = st.columns(3)
-    idx = 0
-    for title, icon, color in features:
-        with cols[idx % 3]:
+    # build a responsive 3-column grid of cards (inline styles so color/visibility are stable)
+    cols = st.columns(3, gap="large")
+    for i, (title, desc, accent) in enumerate(features):
+        col = cols[i % 3]
+        with col:
+            # inline styling ensures the text stands out regardless of global CSS
             st.markdown(
                 f"""
-                <div class='feature-card'>
-                    <h2 style='font-size:3rem; margin:0;'>
-                        <i class="{icon}" style="color:{color};"></i>
-                    </h2>
-                    <h4 style='margin-top:1rem;'>{title}</h4>
+                <div style="
+                    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+                    border-radius:16px; padding:28px; min-height:160px;
+                    display:flex; flex-direction:column; justify-content:center;
+                    box-shadow:0 12px 36px rgba(2,8,30,0.6);
+                    border:1px solid rgba(255,255,255,0.04);
+                ">
+                    <div style="font-weight:800; font-size:1.2rem; color: #ffffff; margin-bottom:10px;">
+                        <span style="display:inline-block; width:12px; height:12px; background:{accent}; border-radius:3px; margin-right:10px;"></span>
+                        {title}
+                    </div>
+                    <div style="color: rgba(220,220,255,0.9); font-size:0.95rem;">{desc}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-        idx += 1
 
+    # small spacer & optional explanation
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
 # ============================
-# PAGE: ABOUT ME — RESTORED
+# PAGE: ABOUT ME (replacement)
 # ============================
 elif page == "About Me":
-
     st.title("👩‍💼 About the Creator")
 
-    st.markdown(
-        """
-<div class='card'>
-    <div class='about-container'>
+    # Use columns (left image, right text) — avoids long HTML strings that can leak
+    col_img, col_text = st.columns([1, 2], gap="large")
 
-        <img src='https://cdn-icons-png.flaticon.com/512/2922/2922561.png' class='about-img'>
+    with col_img:
+        # corporate illustrated avatar (Option A)
+        avatar_url = "https://cdn-icons-png.flaticon.com/512/2922/2922561.png"
+        st.image(avatar_url, width=240, caption="Indu Reddy", use_column_width=False)
 
-        <div class='about-text'>
-            <h2 style='color:#00D2FF;'>Indu Reddy</h2>
+    with col_text:
+        # Use markdown with minimal inline HTML; closed string ensures no leakage
+        st.markdown(
+            """
+            <div style="background: rgba(255,255,255,0.02); padding:18px; border-radius:12px; border:1px solid rgba(255,255,255,0.03);">
+              <h2 style="color:#00D2FF; margin-top:0; margin-bottom:6px;">Indu Reddy</h2>
+              <p style="color:#E8E8FF; font-size:1.05rem; line-height:1.6; margin-top:0;">
+                <strong>AI Engineer • Bengaluru</strong><br><br>
+                I design advanced AI-powered tools that solve real-world problems using Machine Learning, NLP, OCR, and Computer Vision.
+                DiffPro AI compares PDFs, Word files, Excel sheets, and images using semantic analysis, OCR extraction, and visual similarity.<br><br>
+                <strong>Expertise:</strong><br>
+                • Artificial Intelligence & Machine Learning<br>
+                • NLP & Document Intelligence<br>
+                • OCR, Embeddings & Vision Models<br>
+                • Deployment & UI Engineering<br><br>
+                <strong>GitHub:</strong> <a href="https://github.com/indureddy20" style="color:#7C4DFF;">github.com/indureddy20</a>
+              </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            <p>
-            AI Engineer • Bengaluru <br><br>
-            I design advanced AI-powered tools that solve real-world problems using
-            Machine Learning, NLP, OCR, and Computer Vision.<br><br>
-
-            DiffPro AI compares PDFs, Word files, Excel sheets, and images using
-            semantic analysis, OCR extraction, and visual similarity.<br><br>
-
-            <strong>Expertise:</strong><br>
-            • Artificial Intelligence & Machine Learning<br>
-            • NLP & Document Intelligence<br>
-            • OCR, Embeddings & Vision Models<br>
-            • Deployment & UI Engineering<br><br>
-
-            <strong>GitHub:</strong><br>
-            <a href='https://github.com/indureddy20' style='color:#7C4DFF;'>github.com/indureddy20</a>
-            </p>
-        </div>
-
-    </div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
+    # small spacer
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
 # ============================
 # FOOTER
