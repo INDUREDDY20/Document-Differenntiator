@@ -448,3 +448,14 @@ elif page == "About Me":
 """,
         unsafe_allow_html=True,
     )
+# ===========================
+# GLOBAL FOOTER
+# ===========================
+st.markdown(
+    """
+<div style='text-align:center; margin-top:40px; padding:12px; opacity:0.7; font-size:0.9rem;'>
+    Built with ❤️ and passion
+</div>
+""",
+    unsafe_allow_html=True
+)
