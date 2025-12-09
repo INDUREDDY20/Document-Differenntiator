@@ -1,0 +1,13 @@
+streamlit==1.38.0
+pdfplumber
+python-docx
+sentence-transformers
+nltk
+pillow
+pandas
+openpyxl
+pytesseract
+pdf2image
+opencv-python-headless
+imagehash
+scikit-image
