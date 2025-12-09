@@ -1,4 +1,6 @@
+# final_app.py — fully normalized, uses components.html for big HTML blocks
 import streamlit as st
+import streamlit.components.v1 as components
 import io
 import re
 import json
@@ -18,10 +20,9 @@ from sentence_transformers import SentenceTransformer, util
 import imagehash
 from skimage.metrics import structural_similarity as ssim
 
-
-# ===========================
+# ============================================================
 # PAGE CONFIG
-# ===========================
+# ============================================================
 st.set_page_config(
     page_title="DiffPro AI - Document Comparator",
     page_icon="🔎",
@@ -29,13 +30,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# NLTK
+# nltk
 nltk.download("punkt", quiet=True)
 
-
-# ===========================
-# MODEL LOADING (CACHED)
-# ===========================
+# cached model
 @st.cache_resource
 def get_model():
     return SentenceTransformer("all-MiniLM-L6-v2")
@@ -43,10 +41,9 @@ def get_model():
 
 model = get_model()
 
-
-# ===========================
-# GLOBAL CSS
-# ===========================
+# ============================================================
+# GLOBAL CSS — safe single st.markdown block
+# ============================================================
 st.markdown(
     """
 <style>
@@ -59,9 +56,9 @@ html, body, .stApp {
 /* SIDEBAR */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #131324 0%, #0C0C18 100%);
-    padding-top: 18px;
+    padding-top: 12px;
 }
-.sidebar-title { text-align:center; margin-bottom:8px; }
+.sidebar-title { text-align:center; margin-bottom:6px; }
 .sidebar-title h2 { color:#00D2FF; margin:0; font-size:1.8rem; }
 .sidebar-title p { color:#AAB4FF; margin-top:4px; }
 
@@ -73,7 +70,7 @@ html, body, .stApp {
     font-size: 1.05rem;
     font-weight: 600;
     border: none;
-    color: white;
+    color: white !important;
 }
 .stButton > button:hover { transform: translateY(-3px); }
 
@@ -83,7 +80,7 @@ html, body, .stApp {
     padding: 1.6rem;
     border-radius: 12px;
     border: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 18px;
+    margin-bottom: 16px;
     backdrop-filter: blur(8px);
 }
 
@@ -104,15 +101,21 @@ table.diff td { padding:6px; vertical-align:top; }
 .about-text { font-size:1.05rem; line-height:1.6; color:#EEE; }
 .about-text a { color:#7C4DFF; font-weight:600; }
 
+.footer {
+    text-align:center;
+    margin-top:28px;
+    padding:12px;
+    opacity:0.85;
+    font-size:0.95rem;
+}
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-
-# ===========================
+# ============================================================
 # EXTRACTION HELPERS
-# ===========================
+# ============================================================
 def extract_text_from_docx(raw: bytes) -> str:
     doc = docx.Document(io.BytesIO(raw))
     return "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
@@ -197,9 +200,9 @@ def extract_text(file) -> Dict[str, Any]:
     return result
 
 
-# ===========================
+# ============================================================
 # COMPARISON HELPERS
-# ===========================
+# ============================================================
 def seq_diff(a: str, b: str):
     a_lines = a.splitlines()
     b_lines = b.splitlines()
@@ -253,9 +256,9 @@ def html_diff(a_lines: List[str], b_lines: List[str]) -> str:
     return f"<div class='card'>{table}</div>"
 
 
-# ===========================
-# SIDEBAR / NAVIGATION
-# ===========================
+# ============================================================
+# NAVIGATION / SIDEBAR
+# ============================================================
 st.sidebar.markdown(
     """
 <div class='sidebar-title'>
@@ -269,10 +272,9 @@ st.sidebar.markdown(
 nav = st.sidebar.radio("", ["📄 Compare Documents", "✨ Features", "👩‍💼 About Me"])
 page = "Compare Documents" if nav.startswith("📄") else "Features" if nav.startswith("✨") else "About Me"
 
-
-# ===========================
+# ============================================================
 # PAGE: COMPARE DOCUMENTS
-# ===========================
+# ============================================================
 if page == "Compare Documents":
     st.title("📄 DiffPro AI — Compare Documents")
 
@@ -306,7 +308,7 @@ if page == "Compare Documents":
         st.header("🔢 Numeric Differences")
         st.json(compare_numbers(A.get("text", ""), B.get("text", "")))
 
-        # Table comparisons (if present)
+        # Table summary
         st.header("📊 Table / Excel Summary")
         st.write({"tables_a": [t[0] for t in A.get("tables", [])], "tables_b": [t[0] for t in B.get("tables", [])]})
 
@@ -315,9 +317,9 @@ if page == "Compare Documents":
         img_report = compare_images(A.get("images", []), B.get("images", []))
         st.write(img_report)
         if A.get("images"):
-            st.image(A["images"][0], caption="Doc A — image preview", use_column_width=False, width=300)
+            st.image(A["images"][0], caption="Doc A — image preview", width=300)
         if B.get("images"):
-            st.image(B["images"][0], caption="Doc B — image preview", use_column_width=False, width=300)
+            st.image(B["images"][0], caption="Doc B — image preview", width=300)
 
         # Side-by-side text
         st.header("📚 Side-by-side Text View")
@@ -340,14 +342,14 @@ if page == "Compare Documents":
         href = f'<a href="data:application/json;base64,{b64}" download="diffpro_report.json">Download JSON report</a>'
         st.markdown(href, unsafe_allow_html=True)
 
-
-# ===========================
-# PAGE: FEATURES
-# ===========================
+# ============================================================
+# PAGE: FEATURES (rendered via components.html to avoid escaping)
+# ============================================================
 elif page == "Features":
     st.title("✨ Features of DiffPro AI")
 
     features_html = """
+<div style="padding:12px">
 <div class='card'>
     <h3>🔍 Intelligent Text Comparison</h3>
     <p>
@@ -403,19 +405,18 @@ elif page == "Features":
         Supports PDF, DOCX, TXT, XLSX, PNG, JPG out of the box.
     </p>
 </div>
+</div>
 """
+    components.html(features_html, height=760, scrolling=True)
 
-    st.markdown(features_html, unsafe_allow_html=True)
-
-
-# ===========================
-# PAGE: ABOUT ME
-# ===========================
+# ============================================================
+# PAGE: ABOUT ME (rendered via components.html to avoid escaping)
+# ============================================================
 elif page == "About Me":
     st.title("👩‍💼 About the Creator")
 
-    st.markdown(
-        """
+    about_html = """
+<div style="padding:12px">
 <div class='card'>
     <div class='about-container'>
 
@@ -445,17 +446,18 @@ elif page == "About Me":
 
     </div>
 </div>
-""",
-        unsafe_allow_html=True,
-    )
-# ===========================
-# GLOBAL FOOTER
-# ===========================
+</div>
+"""
+    components.html(about_html, height=420, scrolling=True)
+
+# ============================================================
+# GLOBAL FOOTER (always rendered last)
+# ============================================================
 st.markdown(
     """
-<div style='text-align:center; margin-top:40px; padding:12px; opacity:0.7; font-size:0.9rem;'>
-    Built with ❤️ and passion
+<div class='footer'>
+  Built with ❤️ and passion
 </div>
 """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
