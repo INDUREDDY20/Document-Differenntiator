@@ -292,15 +292,87 @@ def html_diff(a_lines, b_lines):
 # ============================================================
 #                       UI STARTS HERE
 # ============================================================
+# ------------------------------------
+# BEAUTIFUL MODERN SIDEBAR NAVIGATION
+# ------------------------------------
 
 st.sidebar.markdown("""
-<div class='sidebar-title'>
-<h2>DiffPro AI</h2>
-<p>Document Comparator</p>
+<style>
+
+.sidebar-container {
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 25px;
+}
+
+.sidebar-title {
+    color: #00D2FF;
+    font-size: 2rem;
+    margin-bottom: 3px;
+    font-weight: 800;
+}
+
+.sidebar-sub {
+    color: #AAB4FF;
+    font-size: 1rem;
+    margin-bottom: 20px;
+}
+
+/* NAV BUTTONS */
+.sidebar-nav button {
+    width: 100%;
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    padding: 12px 18px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    color: #e0e0ff !important;
+    text-align: left;
+    font-size: 1.05rem;
+    transition: 0.25s;
+}
+
+.sidebar-nav button:hover {
+    background: rgba(0,210,255,0.2) !important;
+    transform: translateX(4px);
+    border-color: rgba(0,210,255,0.5) !important;
+}
+
+/* ACTIVE BUTTON */
+.sidebar-nav button[data-selected="true"] {
+    background: linear-gradient(90deg, #00D2FF, #7C4DFF) !important;
+    color: white !important;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(0,210,255,0.5);
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# Custom Navigation Buttons with icons
+st.sidebar.markdown("""
+<div class="sidebar-container">
+    <div class="sidebar-title">DiffPro AI</div>
+    <div class="sidebar-sub">Document Comparator</div>
 </div>
 """, unsafe_allow_html=True)
 
-page = st.sidebar.radio("Navigation", ["Compare Documents", "Features", "About Me"])
+
+# Create navigation layout
+nav = st.sidebar.radio(
+    "",
+    ["📄 Compare Documents", "✨ Features", "👩‍💼 About Me"],
+    key="nav",
+)
+
+# Map values back to your page variable
+if nav.startswith("📄"):
+    page = "Compare Documents"
+elif nav.startswith("✨"):
+    page = "Features"
+else:
+    page = "About Me"
 
 
 # ------------------------------------------------------------
@@ -359,15 +431,77 @@ if page == "Compare Documents":
 #                      FEATURES PAGE
 # ------------------------------------------------------------
 elif page == "Features":
-    st.title("✨ Features")
+    st.title("✨ Features of DiffPro AI")
+
     st.markdown("""
-- Semantic Matching  
-- OCR for PDFs & Images  
-- Excel/Table Comparison  
-- Inline Colored Diff  
-- Image Structural Similarity  
-- JSON Report Export  
-""")
+<div class='card'>
+    <h3>🔍 Intelligent Text Comparison</h3>
+    <p>
+        DiffPro AI performs both <strong>exact text matching</strong> and 
+        <strong>semantic similarity analysis</strong> using transformer embeddings.
+        This allows the app to detect changes in meaning, paraphrasing, or reworded content.
+    </p>
+</div>
+
+<div class='card'>
+    <h3>🧠 Semantic Analysis (AI-Powered)</h3>
+    <p>
+        Uses SentenceTransformers for deep semantic comparison.  
+        Identifies sentences with low semantic similarity and highlights them.
+    </p>
+</div>
+
+<div class='card'>
+    <h3>📑 Visual Inline Diff Viewer</h3>
+    <p>
+        Beautiful side-by-side diff view with color-coded highlights:<br>
+        <span style='color:#4CAF50;'>Green = Added</span><br>
+        <span style='color:#FF5252;'>Red = Removed</span><br>
+        <span style='color:#FFCA28;'>Yellow = Modified</span>
+    </p>
+</div>
+
+<div class='card'>
+    <h3>🖼️ OCR & Image Comparison</h3>
+    <p>
+        • Extracts text from scanned PDFs & images using OCR.<br>
+        • Computes perceptual hash distance (pHash) for visual similarity.<br>
+        • SSIM score for structural similarity between images.
+    </p>
+</div>
+
+<div class='card'>
+    <h3>📊 Excel & Table Comparison</h3>
+    <p>
+        Detects:<br>
+        • Column differences<br>
+        • Row-level mismatches<br>
+        • Sheet-wise comparison<br>
+        • Cell-level drift (sample view)
+    </p>
+</div>
+
+<div class='card'>
+    <h3>📤 Exportable JSON Comparison Report</h3>
+    <p>
+        Generates a structured JSON file summarizing:<br>
+        • Text similarity<br>
+        • Semantic similarity<br>
+        • Numerical drift<br>
+        • Detected changes<br>
+        • Table differences<br>
+        • Image comparison metrics
+    </p>
+</div>
+
+<div class='card'>
+    <h3>🌐 Multi-Format Support</h3>
+    <p>
+        Accepts: PDF, DOCX, TXT, XLSX, PNG, JPG, JPEG.  
+        Automatically detects and processes content appropriately.
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
 
 # ------------------------------------------------------------
@@ -375,20 +509,37 @@ elif page == "Features":
 # ------------------------------------------------------------
 elif page == "About Me":
 
-    st.title("👩‍💻 About the Creator")
+    st.title("👩‍💼 About the Creator")
 
     st.markdown("""
 <div class='card'>
     <div class='about-container'>
-        <img src='https://cdn-icons-png.flaticon.com/512/3135/3135715.png' class='about-img'>
+    
+        <!-- Corporate female avatar -->
+        <img src='https://cdn-icons-png.flaticon.com/512/2922/2922561.png' class='about-img'>
 
         <div class='about-text'>
-            <h2 style='color:#00D2FF;'>Indu Reddy</h2>
-            AI Engineer • Bengaluru<br><br>
-            Creator of DiffPro AI – an intelligent multi-format document comparison tool.<br><br>
-            <strong>GitHub:</strong> 
+            <h2 style='color:#00D2FF; margin-bottom:8px;'>Indu Reddy</h2>
+            <p>
+            AI Engineer • Bengaluru <br><br>
+
+            I design advanced AI-powered tools that solve real-world problems with a mix 
+            of Machine Learning, NLP, OCR, and Computer Vision.  
+            DiffPro AI is built to compare any type of document — PDFs, Word files, Excel sheets, images — 
+            using deep semantic analysis, visual matching, and structural comparison.<br><br>
+
+            <strong>Expertise:</strong><br>
+            • Artificial Intelligence & Machine Learning<br>
+            • NLP / Document Intelligence<br>
+            • Data Engineering & Automation<br>
+            • Model Deployment & AI UI/UX<br><br>
+
+            <strong>GitHub:</strong><br>
             <a href="https://github.com/indureddy20">github.com/indureddy20</a>
+            </p>
+
         </div>
+
     </div>
 </div>
 """, unsafe_allow_html=True)
