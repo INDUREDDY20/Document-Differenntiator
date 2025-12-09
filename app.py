@@ -511,22 +511,24 @@ elif page == "About Me":
 
     st.title("👩‍💼 About the Creator")
 
-    st.markdown("""
+    about_html = """
 <div class='card'>
     <div class='about-container'>
-    
+
         <!-- Corporate female avatar -->
         <img src='https://cdn-icons-png.flaticon.com/512/2922/2922561.png' class='about-img'>
 
         <div class='about-text'>
             <h2 style='color:#00D2FF; margin-bottom:8px;'>Indu Reddy</h2>
+
             <p>
             AI Engineer • Bengaluru <br><br>
 
-            I design advanced AI-powered tools that solve real-world problems with a mix 
-            of Machine Learning, NLP, OCR, and Computer Vision.  
-            DiffPro AI is built to compare any type of document — PDFs, Word files, Excel sheets, images — 
-            using deep semantic analysis, visual matching, and structural comparison.<br><br>
+            I design advanced AI-powered tools that solve real-world problems using
+            Machine Learning, NLP, OCR, and Computer Vision.<br><br>
+
+            DiffPro AI compares PDFs, Word files, Excel sheets, and images using
+            semantic analysis, visual similarity, and structural comparison.<br><br>
 
             <strong>Expertise:</strong><br>
             • Artificial Intelligence & Machine Learning<br>
@@ -542,7 +544,10 @@ elif page == "About Me":
 
     </div>
 </div>
-""", unsafe_allow_html=True)
+"""
+
+    st.markdown(about_html, unsafe_allow_html=True)
+
 
 
 st.markdown("<br><center>DiffPro AI • Built with love and passion</center>", unsafe_allow_html=True)
