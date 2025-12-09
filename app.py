@@ -375,10 +375,10 @@ elif page == "About Me":
 
     st.title("👩‍💼 About the Creator")
 
-    about_html = """
+    st.markdown("""
 <div class='card'>
     <div class='about-container'>
-    
+
         <img src='https://cdn-icons-png.flaticon.com/512/2922/2922561.png' class='about-img'>
 
         <div class='about-text'>
@@ -387,10 +387,10 @@ elif page == "About Me":
             <p>
             AI Engineer • Bengaluru <br><br>
 
-            I build intelligent applications using Machine Learning, NLP, Computer Vision,
-            and interactive UI systems.  
-            DiffPro AI is designed to help individuals, businesses, and analysts compare
-            documents with precision and clarity.<br><br>
+            I build intelligent applications using Machine Learning, NLP,
+            Computer Vision, and interactive UI systems.  
+            DiffPro AI is designed to help individuals, businesses, and analysts
+            compare documents with precision and clarity.<br><br>
 
             <strong>Expertise:</strong><br>
             • Artificial Intelligence & Machine Learning<br>
@@ -401,9 +401,9 @@ elif page == "About Me":
             <strong>GitHub:</strong><br>
             <a href='https://github.com/indureddy20'>github.com/indureddy20</a>
             </p>
+
         </div>
+
     </div>
 </div>
-"""
-
-    st.markdown(about_html, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
