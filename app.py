@@ -286,7 +286,7 @@ elif page == "Features":
 
     st.title("✨ Features of DiffPro AI")
 
-    st.markdown("""
+    features_html = """
 <div class='card'>
     <h3>🔍 Intelligent Text Comparison</h3>
     <p>
@@ -299,17 +299,17 @@ elif page == "Features":
     <h3>🧠 AI Semantic Understanding</h3>
     <p>
         Uses transformer embeddings to detect changes in meaning, paraphrasing,
-        and rewritten content — even if the text is not identical.
+        and rewritten content — even when the text is restructured.
     </p>
 </div>
 
 <div class='card'>
     <h3>📑 Inline Diff Viewer</h3>
     <p>
-        Color-coded HTML diff shows:
-        <br>🟩 Added text
-        <br>🟥 Removed text
-        <br>🟨 Modified text
+        Color-coded HTML diff shows:<br>
+        🟩 Added text <br>
+        🟥 Removed text <br>
+        🟨 Modified text
     </p>
 </div>
 
@@ -317,27 +317,34 @@ elif page == "Features":
     <h3>🖼 OCR + Image Analysis</h3>
     <p>
         Extracts text from scanned PDFs/images and compares visuals using pHash &
-        SSIM — great for reports, photos, and scanned forms.
+        SSIM — perfect for reports and scanned documents.
     </p>
 </div>
 
 <div class='card'>
     <h3>📊 Excel & Table Comparison</h3>
     <p>
-        Detects sheet changes, column drift, row mismatches, and cell-level anomalies.
-        Very useful for finance, auditing, MIS, and analytics teams.
+        Detects sheet-level changes, column drift, row mismatches, and cell-level anomalies.
     </p>
 </div>
 
-st.markdown("""
 <div class='card'>
-    <h3>🌐 Multi-format Document Support</h3>
+    <h3>📤 JSON Comparison Report</h3>
     <p>
-        Works with PDF, DOCX, TXT, XLSX, PNG, JPG — plug and play.
+        Exports differences in text, semantics, numbers, tables, and images —
+        helpful for automation and auditing.
     </p>
 </div>
-""", unsafe_allow_html=True)
 
+<div class='card'>
+    <h3>🌐 Multi-format Support</h3>
+    <p>
+        Supports PDF, DOCX, TXT, XLSX, PNG, JPG out of the box.
+    </p>
+</div>
+"""
+
+    st.markdown(features_html, unsafe_allow_html=True)
 # ============================================================
 # PAGE: ABOUT ME
 # ============================================================
