@@ -17,8 +17,7 @@ from pdf2image import convert_from_bytes
 import pytesseract
 import hashlib
 import difflib
-
-from reportlab.platypus import SimpleDocTemplate, Paragraph
+from fpdf import FPDF
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import letter
 
@@ -320,40 +319,51 @@ def highlight_changes(textA, textB, added, removed, modified):
 
     return left, right
 
-
-###############################################################
-# PDF EXPORT ENGINE
-###############################################################
+#Export Pdf
 def export_pdf(added, removed, modified, speed_stats):
-    styles = getSampleStyleSheet()
-    story = []
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
 
-    def add_section(title, content):
-        story.append(Paragraph(f"<b>{title}</b><br/><br/>", styles['Title']))
-        if not content:
-            story.append(Paragraph("No content.<br/><br/>", styles['BodyText']))
-        else:
-            for c in content:
-                if isinstance(c, tuple):
-                    story.append(Paragraph(f"<b>Original:</b> {c[0]}<br/>", styles['BodyText']))
-                    story.append(Paragraph(f"<b>Changed To:</b> {c[1]}<br/><br/>", styles['BodyText']))
-                else:
-                    story.append(Paragraph(f"- {c}<br/>", styles['BodyText']))
-        story.append(Paragraph("<br/>", styles['BodyText']))
+    def write_title(title):
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(0, 10, title, ln=True)
+        pdf.ln(2)
+        pdf.set_font("Arial", size=12)
 
-    add_section("Added Content", added)
-    add_section("Removed Content", removed)
-    add_section("Modified Content", modified)
+    def write_lines(lines):
+        if not lines:
+            pdf.multi_cell(0, 8, "No content.\n")
+            pdf.ln(2)
+            return
+        for line in lines:
+            if isinstance(line, tuple):
+                pdf.multi_cell(0, 8, f"Original: {line[0]}")
+                pdf.multi_cell(0, 8, f"Changed to: {line[1]}")
+                pdf.ln(2)
+            else:
+                pdf.multi_cell(0, 8, f"- {line}")
+        pdf.ln(4)
 
-    story.append(Paragraph("<b>Performance Stats</b><br/><br/>", styles['Title']))
+    write_title("Added Content")
+    write_lines(added)
+
+    write_title("Removed Content")
+    write_lines(removed)
+
+    write_title("Modified Content")
+    write_lines(modified)
+
+    write_title("Performance Stats")
     for k, v in speed_stats.items():
-        story.append(Paragraph(f"{k}: {v:.4f} sec<br/>", styles['BodyText']))
+        pdf.multi_cell(0, 8, f"{k}: {v:.4f} sec")
 
-    temp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    pdf = SimpleDocTemplate(temp.name, pagesize=letter)
-    pdf.build(story)
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    pdf.output(tmp.name)
 
-    return temp.name
+    return tmp.name
+
 
 # Sidebar Navigation
 st.sidebar.markdown(
