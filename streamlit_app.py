@@ -1,13 +1,14 @@
 ###############################################################
-# DiffPro AI – Final Hybrid Version 
-# UI Preserved + Ultra Fast Hybrid Diff + PDF Export + Highlights
+# DiffPro AI — Final Fixed (Part 1 / 4)
+# Imports, config, CSS, and extraction helpers
 ###############################################################
 
 import streamlit as st
 import io, re, json, base64, tempfile, time
 from typing import List, Dict, Any
 
-import nltk
+# Core libs
+import nltk     # used only for compatibility if present, but we won't call punkt
 import pandas as pd
 import numpy as np
 from PIL import Image, ImageOps
@@ -18,11 +19,7 @@ import pytesseract
 import hashlib
 import difflib
 
-
-
-###############################################################
-# PAGE CONFIG
-###############################################################
+# Page config
 st.set_page_config(
     page_title="DiffPro AI - Document Comparator",
     page_icon="🔎",
@@ -30,11 +27,13 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-nltk.download("punkt", quiet=True)
+# NOTE: We will not rely on nltk.download('punkt') because some hosts block it.
+# We keep the import for environments where punkt is already present.
+# For sentence splitting we use a fallback fast_sent_tokenize defined in Part 2.
 
-###############################################################
-# GLOBAL CSS (Original UI preserved)
-###############################################################
+# -------------------------
+# GLOBAL CSS (UI preserved)
+# -------------------------
 st.markdown(
     """
 <style>
@@ -105,25 +104,35 @@ html, body, .stApp {
     unsafe_allow_html=True,
 )
 
-###############################################################
-# EXTRACTION FUNCTIONS
-###############################################################
+# -------------------------
+# EXTRACTION UTILITIES
+# -------------------------
 
-def extract_text_from_docx(raw):
-    doc = docx.Document(io.BytesIO(raw))
-    return "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
+def extract_text_from_docx(raw: bytes) -> str:
+    """Extract text from DOCX bytes."""
+    try:
+        doc = docx.Document(io.BytesIO(raw))
+        return "\n".join([p.text.strip() for p in doc.paragraphs if p.text.strip()])
+    except Exception:
+        return ""
 
-def extract_text_from_txt(raw):
+def extract_text_from_txt(raw: bytes) -> str:
+    """Decode text file bytes."""
     try:
         return raw.decode("utf-8", errors="ignore")
-    except:
+    except Exception:
         return str(raw)
 
-def extract_text_from_image(raw):
-    img = Image.open(io.BytesIO(raw)).convert("RGB")
-    return pytesseract.image_to_string(img)
+def extract_text_from_image(raw: bytes) -> str:
+    """Run OCR on an image (PIL + pytesseract)."""
+    try:
+        img = Image.open(io.BytesIO(raw)).convert("RGB")
+        return pytesseract.image_to_string(img)
+    except Exception:
+        return ""
 
-def extract_text_from_excel(raw):
+def extract_text_from_excel(raw: bytes):
+    """Return combined sheet previews and tables list."""
     try:
         sheets = pd.read_excel(io.BytesIO(raw), sheet_name=None)
         out = []
@@ -132,26 +141,35 @@ def extract_text_from_excel(raw):
             tables.append((name, df))
             out.append(f"Sheet: {name}\nColumns: {list(df.columns)}\n{df.head().to_string()}")
         return "\n".join(out), tables
-    except:
+    except Exception:
         return "", []
 
-def extract_text_from_pdf(raw):
+def extract_text_from_pdf(raw: bytes) -> str:
+    """Try text extraction via pdfplumber, fallback to OCR images if needed."""
     try:
         pdf = pdfplumber.open(io.BytesIO(raw))
         pages = [pg.extract_text() or "" for pg in pdf.pages]
         text = "\n".join(pages)
         if text.strip():
             return text
-    except:
+    except Exception:
         pass
 
+    # fallback: render pages to images and OCR
     try:
         imgs = convert_from_bytes(raw)
-        return "\n".join([pytesseract.image_to_string(img) for img in imgs])
-    except:
+        texts = []
+        for img in imgs:
+            texts.append(pytesseract.image_to_string(img))
+        return "\n".join(texts)
+    except Exception:
         return ""
 
-def extract_text(file):
+def extract_text(file) -> Dict[str, Any]:
+    """
+    Unified extractor. Returns dict with keys: text, images (list of PIL), tables (list).
+    Supports: pdf, docx, txt, xlsx, png/jpg.
+    """
     name = file.name.lower()
     data = file.read()
 
@@ -173,38 +191,89 @@ def extract_text(file):
 
     elif name.endswith((".png", ".jpg", ".jpeg")):
         result["text"] = extract_text_from_image(data)
+        try:
+            result["images"] = [Image.open(io.BytesIO(data))]
+        except Exception:
+            result["images"] = []
 
     return result
 
-
+# End of Part 1
 ###############################################################
-# HYBRID COMPARISON ENGINE
+# Part 2 / 4 — Core Utilities (Correct Order)
 ###############################################################
 
-def hybrid_compare(textA, textB):
+# -------------------------------------------------------------
+# 1️⃣ FAST SENTENCE TOKENIZER (NO NLTK DOWNLOAD REQUIRED)
+# -------------------------------------------------------------
+def fast_sent_tokenize(text: str):
+    """
+    A lightweight, regex-based sentence splitter.
+    Replaces nltk.sent_tokenize to avoid punkt_tab errors on Streamlit Cloud.
+    """
+    import re
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    return [s.strip() for s in sentences if s.strip()]
+
+
+# -------------------------------------------------------------
+# 2️⃣ CHUNK TEXT (for hash-based diff)
+# -------------------------------------------------------------
+def chunk_text(text: str, size=600):
+    """Break large text into chunks of uniform size."""
+    text = text.replace("\n\n", "\n")
+    chunks = []
+    for i in range(0, len(text), size):
+        ck = text[i:i + size].strip()
+        if ck:
+            chunks.append(ck)
+    return chunks
+
+
+# -------------------------------------------------------------
+# 3️⃣ HASH CHUNK
+# -------------------------------------------------------------
+def hash_chunk(chunk: str):
+    """Fast MD5 hashing."""
+    return hashlib.md5(chunk.encode()).hexdigest()
+
+
+# -------------------------------------------------------------
+# 4️⃣ HYBRID COMPARE ENGINE (FAST + ACCURATE)
+# -------------------------------------------------------------
+def hybrid_compare(textA: str, textB: str):
+    """
+    Step 1: Chunk and compare using hash (fast)
+    Step 2: For chunks that changed, run smart sentence diff (accurate)
+    """
     chunksA = chunk_text(textA)
     chunksB = chunk_text(textB)
 
     hashesA = {hash_chunk(c): c for c in chunksA}
     hashesB = {hash_chunk(c): c for c in chunksB}
 
-    added, removed, potential_modified = [], [], []
+    added = []
+    removed = []
+    potential_modified = []
 
+    # Detect removed
     for h, c in hashesA.items():
         if h not in hashesB:
             removed.append(c)
 
+    # Detect added
     for h, c in hashesB.items():
         if h not in hashesA:
             added.append(c)
 
-    for r in removed:
-        for a in added:
-            if r[:60] in a or a[:60] in r:
-                potential_modified.append((r, a))
+    # Detect modified pairs
+    for old in removed:
+        for new in added:
+            if old[:50] in new or new[:50] in old:
+                potential_modified.append((old, new))
 
+    # Smart sentence-level diff for modified chunks
     modified_final = []
-
     for old_chunk, new_chunk in potential_modified:
         old_sents = fast_sent_tokenize(old_chunk)
         new_sents = fast_sent_tokenize(new_chunk)
@@ -217,15 +286,16 @@ def hybrid_compare(textA, textB):
             if score < 0.75:
                 modified_final.append((s1, best))
 
+    # Clean lists (avoid duplicates)
     added_clean = [x for x in added if all(x != m[1] for m in potential_modified)]
     removed_clean = [x for x in removed if all(x != m[0] for m in potential_modified)]
 
     return added_clean, removed_clean, modified_final
 
 
-###############################################################
-# CLEAN SUMMARY FORMATTER
-###############################################################
+# -------------------------------------------------------------
+# 5️⃣ CLEAN SUMMARY FORMATTER
+# -------------------------------------------------------------
 def clean_summary(added, removed, modified):
     out = "### 🧾 Clean Difference Summary\n\n"
 
@@ -245,10 +315,10 @@ def clean_summary(added, removed, modified):
     return out
 
 
-###############################################################
-# SECTION / CHAPTER LEVEL DIFFERENCE
-###############################################################
-def detect_sections(text):
+# -------------------------------------------------------------
+# 6️⃣ SECTION / CHAPTER DIFF
+# -------------------------------------------------------------
+def detect_sections(text: str):
     sections = []
     for line in text.split("\n"):
         L = line.strip()
@@ -259,16 +329,18 @@ def detect_sections(text):
     return sections
 
 
-def section_diff(textA, textB):
+def section_diff(textA: str, textB: str):
     sa = set(detect_sections(textA))
     sb = set(detect_sections(textB))
+
     return list(sb - sa), list(sa - sb)
 
 
-###############################################################
-# SIDE-BY-SIDE HIGHLIGHT ENGINE
-###############################################################
+# -------------------------------------------------------------
+# 7️⃣ Side-by-Side Highlight Engine
+# -------------------------------------------------------------
 def highlight_changes(textA, textB, added, removed, modified):
+
     def mark(text, items, color):
         for x in items:
             if isinstance(x, tuple):
@@ -280,13 +352,9 @@ def highlight_changes(textA, textB, added, removed, modified):
     left = textA
     right = textB
 
-    # Removed from A → highlight red
     left = mark(left, removed, "rgba(255,0,0,0.35)")
-
-    # Added in B → highlight green
     right = mark(right, added, "rgba(0,255,0,0.35)")
 
-    # Modified → highlight yellow
     for old, new in modified:
         if old in left:
             left = left.replace(old, f"<span style='background:rgba(255,255,0,0.35)'>{old}</span>")
@@ -295,9 +363,10 @@ def highlight_changes(textA, textB, added, removed, modified):
 
     return left, right
 
-###############################################################
-# EXPORT REPORT AS TXT (Streamlit Cloud Compatible)
-###############################################################
+
+# -------------------------------------------------------------
+# 8️⃣ EXPORT REPORT (TXT ONLY — STREAMLIT CLOUD SAFE)
+# -------------------------------------------------------------
 def export_report(added, removed, modified, speed_stats):
     report = "===== DiffPro AI Report =====\n\n"
 
@@ -327,6 +396,11 @@ def export_report(added, removed, modified, speed_stats):
 
     return tmp.name
 
+# End of Part 2
+###############################################################
+# PART 3 / 4 — COMPARE DOCUMENTS PAGE
+###############################################################
+
 # Sidebar Navigation
 st.sidebar.markdown(
     """
@@ -343,63 +417,70 @@ page = "Compare Documents" if nav.startswith("📄") else "Features" if nav.star
 
 
 ###############################################################
-# PAGE: COMPARE DOCUMENTS (HYBRID DIFF VERSION)
+# PAGE: COMPARE DOCUMENTS
 ###############################################################
 if page == "Compare Documents":
 
-    st.title("📄 DiffPro AI — Compare Any Two Documents (Hybrid Mode + Highlights + PDF)")
+    st.title("📄 DiffPro AI — Compare Documents (Hybrid Mode)")
 
-    # Debug mode toggle
     debug_mode = st.checkbox("Enable Debug Mode (Show Processing Time)", value=False)
 
     colA, colB = st.columns(2)
     with colA:
         fileA = st.file_uploader(
-            "Upload Document A", 
+            "Upload Document A",
             type=["pdf", "docx", "txt", "xlsx", "png", "jpg"]
         )
     with colB:
         fileB = st.file_uploader(
-            "Upload Document B", 
+            "Upload Document B",
             type=["pdf", "docx", "txt", "xlsx", "png", "jpg"]
         )
 
     if fileA and fileB and st.button("Run Comparison"):
-        
-        # ==== TIMER START ====
+
         t_start = time.time()
 
-        # Extract Text
+        # ---------------------------
+        # Extract text
+        # ---------------------------
         t0 = time.time()
         fileA.seek(0)
         fileB.seek(0)
+
         A = extract_text(fileA)
         B = extract_text(fileB)
-        t_extract = time.time()
-
-        st.success("Extraction complete.")
 
         textA = A["text"]
         textB = B["text"]
 
-        # ==== Hybrid Diff ====
+        t_extract = time.time()
+
+        # ---------------------------
+        # Run hybrid diff
+        # ---------------------------
         t1 = time.time()
         added, removed, modified = hybrid_compare(textA, textB)
         t_compare = time.time()
 
-        # ==== Summary Build ====
+        # ---------------------------
+        # Summary
+        # ---------------------------
         summary_html = clean_summary(added, removed, modified)
         t_summary = time.time()
 
-        # ==== Section / Chapter Diff ====
+        # ---------------------------
+        # Section-level diff
+        # ---------------------------
         s_added, s_removed = section_diff(textA, textB)
         t_sections = time.time()
 
-        # ==== Side-by-Side Highlights ====
+        # ---------------------------
+        # Highlighted view
+        # ---------------------------
         leftH, rightH = highlight_changes(textA, textB, added, removed, modified)
         t_highlight = time.time()
 
-        # ==== END TIMER ====
         t_end = time.time()
 
         speed_stats = {
@@ -408,21 +489,19 @@ if page == "Compare Documents":
             "Summary Generation": t_summary - t_compare,
             "Section Diff Time": t_sections - t_summary,
             "Highlight Rendering": t_highlight - t_sections,
-            "Total Processing Time": t_end - t_start,
+            "TOTAL Time": t_end - t_start
         }
 
         ###############################################################
-        # SHOW CLEAN SUMMARY
+        # DISPLAY RESULTS
         ###############################################################
-        st.header("📝 Clean Text Differences")
+
+        st.header("📝 Clean Difference Summary")
         st.markdown(summary_html, unsafe_allow_html=True)
 
-        ###############################################################
-        # SECTION / CHAPTER DIFFERENCES
-        ###############################################################
-        st.header("📚 Section / Chapter Level Changes")
-
+        st.header("📚 Section / Chapter Level Differences")
         colS1, colS2 = st.columns(2)
+
         with colS1:
             st.subheader("➕ Added Sections")
             st.write(s_added if s_added else "No new sections found.")
@@ -431,12 +510,9 @@ if page == "Compare Documents":
             st.subheader("➖ Removed Sections")
             st.write(s_removed if s_removed else "No removed sections found.")
 
-        ###############################################################
-        # SIDE-BY-SIDE HIGHLIGHT PANEL
-        ###############################################################
-        st.header("🖍 Side-by-Side Highlighted View")
-
+        st.header("🖍 Side-by-Side Highlighted Comparison")
         colH1, colH2 = st.columns(2)
+
         with colH1:
             st.markdown(
                 f"<div style='padding:12px; background:rgba(255,255,255,0.06); border-radius:10px;'>{leftH}</div>",
@@ -449,27 +525,23 @@ if page == "Compare Documents":
                 unsafe_allow_html=True
             )
 
-        ###############################################################
-        # RAW TEXT PANELS
-        ###############################################################
         st.header("📄 Raw Extracted Text (Preview)")
 
         colR1, colR2 = st.columns(2)
-        colR1.text_area("Document A (extracted)", textA[:5000], height=300)
-        colR2.text_area("Document B (extracted)", textB[:5000], height=300)
+        colR1.text_area("Document A (text)", textA[:5000], height=300)
+        colR2.text_area("Document B (text)", textB[:5000], height=300)
 
-        ###############################################################
-        # DEBUG MODE OUTPUT
-        ###############################################################
+        # ---------------------------
+        # Debug Output
+        # ---------------------------
         if debug_mode:
-            st.header("⏱ Performance Debug Stats")
+            st.header("⏱ Debug Performance Stats")
             st.json(speed_stats)
 
-        ###############################################################
-        # TXT REPORT EXPORT BUTTON
-        ###############################################################
+        # ---------------------------
+        # TXT EXPORT
+        # ---------------------------
         st.header("📄 Export Results")
-
         if st.button("Download Report (.txt)"):
             rpt_path = export_report(added, removed, modified, speed_stats)
             with open(rpt_path, "rb") as f:
@@ -477,66 +549,65 @@ if page == "Compare Documents":
                     "Download DiffPro Report (.txt)",
                     f,
                     file_name="DiffPro_Report.txt"
-                 )
+                )
 
 
 ###############################################################
+# END OF PART 3
+###############################################################
+###############################################################
+# PART 4 / 4 — FEATURES PAGE + ABOUT PAGE + FOOTER
+###############################################################
+
+# -------------------------
 # PAGE: FEATURES
-###############################################################
+# -------------------------
 elif page == "Features":
     st.title("✨ Features of DiffPro AI")
 
     features = [
         ("Hybrid Diff Engine", 
-         "Combines ultra-fast hashing with smart sentence-level comparison.", "#00d2ff"),
-
-        ("PDF Report Export", 
-         "Generate clean, formatted diff reports for documentation and auditing.", "#7c4dff"),
-
+         "Combines fast hashing + accurate sentence comparison.", "#00d2ff"),
+        ("TXT Report Export", 
+         "Streamlit Cloud compatible report export with clear diff text.", "#7c4dff"),
         ("Side-by-Side Highlights", 
-         "Instant visual detection of added, removed, and modified content.", "#00bfa5"),
-
-        ("Section / Chapter-Level Diff", 
-         "Detects changed headings, chapters, and major document structure edits.", "#ffd93d"),
-
-        ("OCR for Scanned PDFs & Images", 
-         "Extracts text from scanned images using advanced OCR techniques.", "#ff6b6b"),
-
-        ("Excel Table Support", 
-         "Extracts sheets and table previews directly from .xlsx files.", "#4caf50"),
-
-        ("Modern UI Experience", 
-         "Sleek gradient UI, glassmorphism panels, and responsive layout.", "#e91e63"),
-
-        ("Debug Performance Mode", 
-         "Shows complete internal timings for optimization & debugging.", "#ffa726"),
-
-        ("100% Streamlit Cloud Compatible", 
-         "No external dependencies. Fast and lightweight.", "#29b6f6"),
+         "Visual marking of added, removed, and modified text.", "#00bfa5"),
+        ("Section / Chapter Diff", 
+         "Detects large structural changes in documents.", "#ffd93d"),
+        ("OCR for PDFs & Images", 
+         "Extracts text from scanned PDF pages or images.", "#ff6b6b"),
+        ("Excel Sheet Parsing", 
+         "Reads .xlsx and displays sheet structure & preview.", "#4caf50"),
+        ("Fast Processing", 
+         "Optimized hybrid engine ensures high performance.", "#e91e63"),
+        ("Debug Mode", 
+         "Detailed timing breakdown for performance tuning.", "#ffa726"),
+        ("Modern UI", 
+         "Clean, stylish, gradient-powered interface.", "#29b6f6"),
     ]
 
     cols = st.columns(3, gap="large")
 
-    for i, (title, desc, accent) in enumerate(features):
-        col = cols[i % 3]
-        with col:
+    for i, (title, desc, color) in enumerate(features):
+        with cols[i % 3]:
             st.markdown(
                 f"""
                 <div style="
-                    background: rgba(255,255,255,0.03);
-                    padding:26px;
+                    background: rgba(255,255,255,0.04);
+                    padding:22px;
                     border-radius:18px;
-                    min-height:160px;
-                    border:1px solid rgba(255,255,255,0.08);
-                    box-shadow:0 10px 25px rgba(0,0,0,0.5);
+                    border:1px solid rgba(255,255,255,0.1);
+                    box-shadow:0 6px 18px rgba(0,0,0,0.4);
+                    margin-bottom:20px;
                     transition:0.3s;
                 ">
                     <div style="font-size:1.2rem; font-weight:800; color:white;">
-                        <span style="display:inline-block; width:12px; height:12px; background:{accent};
-                        border-radius:3px; margin-right:10px;"></span>
+                        <span style="display:inline-block; width:14px; height:14px; 
+                            background:{color}; border-radius:4px; margin-right:10px;">
+                        </span>
                         {title}
                     </div>
-                    <div style="color:rgba(220,220,255,0.9); margin-top:8px; font-size:0.95rem;">
+                    <div style="color:#D6D6FF; margin-top:6px; font-size:0.95rem;">
                         {desc}
                     </div>
                 </div>
@@ -545,59 +616,57 @@ elif page == "Features":
             )
 
 
-###############################################################
+# -------------------------
 # PAGE: ABOUT ME
-###############################################################
+# -------------------------
 elif page == "About Me":
 
     st.title("👩‍💼 About the Creator")
 
-    col_img, col_text = st.columns([1, 2], gap="large")
+    col1, col2 = st.columns([1,2], gap="large")
 
-    with col_img:
+    with col1:
         st.image(
             "https://cdn-icons-png.flaticon.com/512/2922/2922561.png",
-            width=240,
+            width=200,
             caption="Indu Reddy"
         )
 
-    with col_text:
+    with col2:
         st.markdown(
             """
-            <div style="background: rgba(255,255,255,0.04);
-                padding:20px; border-radius:14px; 
-                border:1px solid rgba(255,255,255,0.05);">
+            <div style="background: rgba(255,255,255,0.05);
+                padding:20px; border-radius:16px;
+                border:1px solid rgba(255,255,255,0.08);">
 
             <h2 style="color:#00D2FF; margin:0;">Indu Reddy</h2>
+            <p style="color:#EAEAFF; font-size:1.05rem; line-height:1.7;">
 
-            <p style="color:#E8E8FF; font-size:1.1rem; line-height:1.7;">
-            <strong>AI Engineer • Document Intelligence • Python Developer</strong><br><br>
+            <strong>AI Engineer • NLP Developer • Python Specialist</strong><br><br>
 
-            I build intelligent tools that enhance productivity using NLP, OCR, 
-            fast text diffing, hybrid analysis models, and user-centric UI design.<br><br>
+            I build tools that make document understanding easier, faster, and more accurate.  
+            DiffPro AI combines NLP, OCR, hybrid diff algorithms, and stylish UI to create a top-tier comparison engine.
 
-            DiffPro AI is engineered to solve the hardest document comparison 
-            problems with unmatched speed and clarity.<br><br>
-
-            <strong>Expertise:</strong><br>
-            • AI & Machine Learning<br>
-            • NLP & Text Embedding<br>
-            • OCR & Image Processing<br>
+            <br><br><strong>Skills:</strong><br>
+            • Machine Learning & AI<br>
+            • Natural Language Processing<br>
+            • OCR & Pattern Recognition<br>
             • Full-Stack Python Development<br>
-            • Intelligent UI/UX Engineering<br><br>
+            • UI/UX Engineering<br><br>
 
             <strong>GitHub:</strong> 
-            <a href="https://github.com/indureddy20" style="color:#7C4DFF;">github.com/indureddy20</a>
-            </p>
-            </div>
+            <a href="https://github.com/indureddy20" target="_blank" style="color:#7C4DFF;">
+            github.com/indureddy20</a>
+
+            </p></div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
 
-###############################################################
+# -------------------------
 # FOOTER
-###############################################################
+# -------------------------
 st.markdown(
     """
 <div class='footer'>
@@ -606,5 +675,3 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
-
