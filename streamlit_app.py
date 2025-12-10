@@ -13,8 +13,7 @@ import pdfplumber
 import docx
 from pdf2image import convert_from_bytes
 import pytesseract
-
-from rapidfuzz import fuzz
+import difflib
 
 # ============================
 # PAGE CONFIG
@@ -195,25 +194,25 @@ def split_sentences(text):
         return text.split(".")
 
 
-def compare_sentences(old_sent, new_sent, threshold=80):
+def compare_sentences(old_sent, new_sent, threshold=0.80):
     added, removed, modified = [], [], []
 
     for s1 in old_sent:
-        best = max(new_sent, key=lambda s2: fuzz.ratio(s1, s2)) if new_sent else ""
-        score = fuzz.ratio(s1, best)
+        best = max(new_sent, key=lambda s2: difflib.SequenceMatcher(None, s1, s2).ratio()) if new_sent else ""
+        score = difflib.SequenceMatcher(None, s1, best).ratio()
 
         if score < threshold:
-            if score < 30:
+            if score < 0.3:
                 removed.append(s1)
             else:
                 modified.append((s1, best))
 
     for s2 in new_sent:
-        best = max(old_sent, key=lambda s1: fuzz.ratio(s2, s1)) if old_sent else ""
-        score = fuzz.ratio(s2, best)
+        best = max(old_sent, key=lambda s1: difflib.SequenceMatcher(None, s2, s1).ratio()) if old_sent else ""
+        score = difflib.SequenceMatcher(None, s2, best).ratio()
 
         if score < threshold:
-            if score < 30:
+            if score < 0.3:
                 added.append(s2)
 
     return added, removed, modified
