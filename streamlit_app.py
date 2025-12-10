@@ -355,51 +355,37 @@ def highlight_changes(textA, textB, added, removed, modified):
 
     return left, right
 
-#Export Pdf
-def export_pdf(added, removed, modified, speed_stats):
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
+###############################################################
+# EXPORT REPORT AS TXT (Streamlit Cloud Compatible)
+###############################################################
+def export_report(added, removed, modified, speed_stats):
+    report = "===== DiffPro AI Report =====\n\n"
 
-    def write_title(title):
-        pdf.set_font("Arial", "B", 14)
-        pdf.cell(0, 10, title, ln=True)
-        pdf.ln(2)
-        pdf.set_font("Arial", size=12)
+    def add_section(title, content):
+        nonlocal report
+        report += f"\n\n### {title} ###\n"
+        if not content:
+            report += "No content.\n"
+        else:
+            for c in content:
+                if isinstance(c, tuple):
+                    report += f"Original: {c[0]}\nChanged To: {c[1]}\n\n"
+                else:
+                    report += f"- {c}\n"
 
-    def write_lines(lines):
-        if not lines:
-            pdf.multi_cell(0, 8, "No content.\n")
-            pdf.ln(2)
-            return
-        for line in lines:
-            if isinstance(line, tuple):
-                pdf.multi_cell(0, 8, f"Original: {line[0]}")
-                pdf.multi_cell(0, 8, f"Changed to: {line[1]}")
-                pdf.ln(2)
-            else:
-                pdf.multi_cell(0, 8, f"- {line}")
-        pdf.ln(4)
+    add_section("Added Content", added)
+    add_section("Removed Content", removed)
+    add_section("Modified Content", modified)
 
-    write_title("Added Content")
-    write_lines(added)
-
-    write_title("Removed Content")
-    write_lines(removed)
-
-    write_title("Modified Content")
-    write_lines(modified)
-
-    write_title("Performance Stats")
+    report += "\n\n### Performance Stats ###\n"
     for k, v in speed_stats.items():
-        pdf.multi_cell(0, 8, f"{k}: {v:.4f} sec")
+        report += f"{k}: {v:.4f} sec\n"
 
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-    pdf.output(tmp.name)
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".txt")
+    with open(tmp.name, "w", encoding="utf-8") as f:
+        f.write(report)
 
     return tmp.name
-
 
 # Sidebar Navigation
 st.sidebar.markdown(
@@ -540,18 +526,19 @@ if page == "Compare Documents":
             st.json(speed_stats)
 
         ###############################################################
-        # PDF EXPORT
+        # TXT REPORT EXPORT BUTTON
         ###############################################################
         st.header("📄 Export Results")
 
-        if st.button("Download Report as PDF"):
-            pdf_path = export_pdf(added, removed, modified, speed_stats)
-            with open(pdf_path, "rb") as f:
+        if st.button("Download Report (.txt)"):
+            rpt_path = export_report(added, removed, modified, speed_stats)
+            with open(rpt_path, "rb") as f:
                 st.download_button(
-                    "Download DiffPro Report (PDF)",
+                    "Download DiffPro Report (.txt)",
                     f,
-                    file_name="DiffPro_Report.pdf"
-                )
+                    file_name="DiffPro_Report.txt"
+                 )
+
 
 ###############################################################
 # PAGE: FEATURES
