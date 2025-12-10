@@ -181,28 +181,7 @@ def extract_text(file):
 # HYBRID COMPARISON ENGINE
 ###############################################################
 
-def chunk_text(text, size=600):
-    """Fast chunking for hash-level diff."""
-    chunks = []
-    text = text.replace("\n\n", "\n")
-    for i in range(0, len(text), size):
-        ck = text[i:i+size].strip()
-        if ck:
-            chunks.append(ck)
-    return chunks
-
-
-def hash_chunk(chunk):
-    """MD5 hashing for fast comparison."""
-    return hashlib.md5(chunk.encode()).hexdigest()
-
-
 def hybrid_compare(textA, textB):
-    """
-    Hybrid approach:
-    1. First detect differences via hash-based chunking (super fast)
-    2. For modified chunks ONLY, run difflib sentence comparison (smart/accurate)
-    """
     chunksA = chunk_text(textA)
     chunksB = chunk_text(textB)
 
@@ -211,35 +190,33 @@ def hybrid_compare(textA, textB):
 
     added, removed, potential_modified = [], [], []
 
-    # Removed = hash missing in B
     for h, c in hashesA.items():
         if h not in hashesB:
             removed.append(c)
 
-    # Added = hash missing in A
     for h, c in hashesB.items():
         if h not in hashesA:
             added.append(c)
 
-    # Detect potential modified by overlapping content
     for r in removed:
         for a in added:
             if r[:60] in a or a[:60] in r:
                 potential_modified.append((r, a))
 
-    # Run sentence diff only on modified chunks
     modified_final = []
+
     for old_chunk, new_chunk in potential_modified:
-        old_sents = nltk.sent_tokenize(old_chunk)
-        new_sents = nltk.sent_tokenize(new_chunk)
+        old_sents = fast_sent_tokenize(old_chunk)
+        new_sents = fast_sent_tokenize(new_chunk)
 
         for s1 in old_sents:
+            if not new_sents:
+                continue
             best = max(new_sents, key=lambda s2: difflib.SequenceMatcher(None, s1, s2).ratio())
             score = difflib.SequenceMatcher(None, s1, best).ratio()
             if score < 0.75:
                 modified_final.append((s1, best))
 
-    # Final cleaned lists
     added_clean = [x for x in added if all(x != m[1] for m in potential_modified)]
     removed_clean = [x for x in removed if all(x != m[0] for m in potential_modified)]
 
