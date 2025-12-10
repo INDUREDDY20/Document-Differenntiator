@@ -17,9 +17,45 @@ from pdf2image import convert_from_bytes
 import pytesseract
 import hashlib
 import difflib
-from fpdf import FPDF
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.pagesizes import letter
+import fitz  # PyMuPDF
+
+def export_pdf(added, removed, modified, speed_stats):
+    # Build plain text report first
+    report_text = ""
+
+    def add_section(title, content):
+        nonlocal report_text
+        report_text += f"\n\n===== {title} =====\n"
+        if not content:
+            report_text += "No content.\n"
+        else:
+            for c in content:
+                if isinstance(c, tuple):
+                    report_text += f"Original: {c[0]}\nChanged To: {c[1]}\n\n"
+                else:
+                    report_text += f"- {c}\n"
+
+    add_section("Added Content", added)
+    add_section("Removed Content", removed)
+    add_section("Modified Content", modified)
+
+    report_text += "\n\n===== Performance Stats =====\n"
+    for k, v in speed_stats.items():
+        report_text += f"{k}: {v:.4f} sec\n"
+
+    # Generate PDF using PyMuPDF
+    pdf_path = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf").name
+    doc = fitz.open()
+
+    # Create PDF page and insert text
+    page = doc.new_page()
+    text_rect = fitz.Rect(40, 40, 550, 800)
+    page.insert_textbox(text_rect, report_text, fontsize=11, fontname="helv")
+
+    doc.save(pdf_path)
+    doc.close()
+
+    return pdf_path
 
 ###############################################################
 # PAGE CONFIG
